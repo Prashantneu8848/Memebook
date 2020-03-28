@@ -269,21 +269,10 @@ class Logout(Handler):
         self.logout()
         self.redirect('/')
 
-class Welcome(Handler):
-    def get(self):
-        username = self.request.get('username')
-        username_valid = valid_username(username)
-        print(username_valid)
-        if username_valid:
-            self.render('welcome.html', username=username)
-        else:
-            self.redirect('signup.html')
-
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
-                               ('/welcome', Welcome),
                                ('/blog', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
