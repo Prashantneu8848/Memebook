@@ -7,8 +7,11 @@ import hashlib
 import hmac
 import random
 import string
+import urllib
+import cgi
 
 from google.appengine.ext import db
+from google.appengine.api import images
 
 
 template_dir = jinja2.FileSystemLoader(searchpath="./")
@@ -25,10 +28,8 @@ def hash_str(s):
     key = secret
     return hmac.new(key, s).hexdigest()
 
-
 def make_secure_val(s):
     return "%s|%s" % (s, hash_str(s))
-
 
 def check_secure_val(h):
     val = h.split('|')[0]
@@ -58,9 +59,11 @@ class Handler(webapp2.RequestHandler):
         cookie_val = self.request.cookies.get(name)
         return cookie_val and check_secure_val(cookie_val)
 
+    # Creates the cookie for the user.
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
 
+    # Delets the cookie for that user.
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
@@ -68,12 +71,6 @@ class Handler(webapp2.RequestHandler):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
-
-
-def render_post(response, post):
-    response.out.write('<b>' + post.subject + '</b><br>')
-    response.out.write(post.content)
-
 
 class MainPage(Handler):
     def get(self):
@@ -112,9 +109,10 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    image = db.BlobProperty()
 
     def render(self):
-        self._render_text = self.content.replace('\n', '<br>')
+        #self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
 
 class BlogFront(Handler):
@@ -122,9 +120,24 @@ class BlogFront(Handler):
         self.username = self.request.get('username')
         if valid_username(self.username):
             posts = greetings = Post.all().order('-created')
-            self.render('front.html', posts = posts, username = self.username)
+            self.response.out.write('<a href="/blog/newpost">post</a> <a href="logout">logout</a>')
+            for post in posts:
+                self.response.out.write('<div><img src="/img?img_id=%s"></img>' %
+                                    post.key)
+                self.response.out.write('<blockquote>%s</blockquote></div>' %
+                                    cgi.escape(post.content))
         else:
             self.redirect('/')
+
+class Image(Handler):
+    def get(self):
+        post_key = db.Key(urlsafe=self.request.get('img_id'))
+        post = post_key.get()
+        if post.image:
+            self.response.headers['Content-Type'] = 'image/png'
+            self.response.out.write(post.image)
+        else:
+            self.response.out.write('No image')
 
 class PostPage(Handler):
     def get(self, post_id):
@@ -135,6 +148,10 @@ class PostPage(Handler):
             self.error(404)
             return
 
+        # self.response.out.write(post.subject)
+        # self.response.out.write(post.content)
+        #self.response.headers['Content-Type'] = "image/png"
+        # self.response.out.write(post.image)
         self.render("permalink.html", post = post)
 
 class NewPost(Handler):
@@ -146,17 +163,30 @@ class NewPost(Handler):
 
     def post(self):
         if not self.user:
-            self.redirect('/blog')
+            self.redirect('/login')
 
         subject = self.request.get('subject')
         content = self.request.get('content')
+        image = self.request.get('img')
+        image = images.resize(image, 32, 32)
+
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content)
+            p = Post(parent = blog_key(), subject = subject, content = content, image = image)
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
         else:
-            error = "subject and content, please!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
+            error = "subject, image and content, please!"
+            self.render("newpost.html", subject=subject, content=content, image = image, error=error)
+
+class Image(Handler):
+    def get(self):
+        post_key = db.Key(urlsafe=self.request.get('image_id'))
+        post = post_key.get()
+        if post.image:
+            self.response.headers['Content-Type'] = 'image/png'
+            self.response.out.write(post.image)
+        else:
+            self.response.out.write('No image')
 
 class User(db.Model):
     name = db.StringProperty(required = True)
@@ -272,6 +302,7 @@ class Logout(Handler):
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/signup', Register),
                                ('/login', Login),
+                               ('/img', Image),
                                ('/logout', Logout),
                                ('/blog', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
