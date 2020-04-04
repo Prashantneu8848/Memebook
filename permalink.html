@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{post.render() | safe}}
+  Thank you for uploading your content. <br>
+  <div><img src="/img?img_id={{post.key()}}"></img>
+  <blockquote>{{post.content}}</blockquote></div>
 {% endblock %}

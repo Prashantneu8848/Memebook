@@ -145,10 +145,6 @@ class PostPage(Handler):
             self.error(404)
             return
 
-        # self.response.out.write(post.subject)
-        # self.response.out.write(post.content)
-        #self.response.headers['Content-Type'] = "image/png"
-        # self.response.out.write(post.image)
         self.render("permalink.html", post = post)
 
 class NewPost(Handler):
@@ -165,9 +161,9 @@ class NewPost(Handler):
         subject = self.request.get('subject')
         content = self.request.get('content')
         image = self.request.get('img')
-        image = images.resize(image, 32, 32)
+        image = images.resize(image, 320, 320)
 
-        if subject and content:
+        if subject and content and image:
             p = Post(parent = blog_key(), subject = subject, content = content, image = image)
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
