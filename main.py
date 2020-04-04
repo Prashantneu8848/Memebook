@@ -101,9 +101,6 @@ def valid_username(username):
     USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
     return username and USER_RE.match(username)
 
-def blog_key(name = 'default'):
-    return db.Key.from_path('blogs', name)
-
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
@@ -111,16 +108,16 @@ class Post(db.Model):
     last_modified = db.DateTimeProperty(auto_now = True)
     image = db.BlobProperty()
 
-    def render(self):
-        #self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p = self)
+def blog_key(name = 'default'):
+    return db.Key.from_path('blogs', name)
 
 class BlogFront(Handler):
     def get(self):
         self.username = self.request.get('username')
         if valid_username(self.username):
-            posts = greetings = Post.all().order('-created')
-            self.response.out.write('<a href="/blog/newpost">post</a> <a href="logout">logout</a>')
+            posts = Post.all().order('-created')
+            self.response.out.write('<html><body>')
+            self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a>')
             for post in posts:
                 self.response.out.write('<div><img src="/img?img_id=%s"></img>' %
                                     post.key)
@@ -131,7 +128,7 @@ class BlogFront(Handler):
 
 class Image(Handler):
     def get(self):
-        post_key = db.Key(urlsafe=self.request.get('img_id'))
+        post_key = db.Key(self.request.get('img_id'))
         post = post_key.get()
         if post.image:
             self.response.headers['Content-Type'] = 'image/png'
@@ -177,16 +174,6 @@ class NewPost(Handler):
         else:
             error = "subject, image and content, please!"
             self.render("newpost.html", subject=subject, content=content, image = image, error=error)
-
-class Image(Handler):
-    def get(self):
-        post_key = db.Key(urlsafe=self.request.get('image_id'))
-        post = post_key.get()
-        if post.image:
-            self.response.headers['Content-Type'] = 'image/png'
-            self.response.out.write(post.image)
-        else:
-            self.response.out.write('No image')
 
 class User(db.Model):
     name = db.StringProperty(required = True)
