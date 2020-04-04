@@ -119,10 +119,14 @@ class BlogFront(Handler):
             self.response.out.write('<html><body>')
             self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a>')
             for post in posts:
-                self.response.out.write('<div><img src="/img?img_id=%s"></img>' %
+                self.response.out.write('<hr><div><img src="/img?img_id=%s"></img>' %
                                     str(post.key()))
-                self.response.out.write('<blockquote>%s</blockquote></div>' %
+                self.response.out.write('<blockquote>Description => %s</blockquote></div>' %
                                     cgi.escape(post.content))
+                self.response.out.write('<blockquote>Uploaded by: %s</blockquote></div>' %
+                                    cgi.escape(self.username))
+                self.response.out.write('<blockquote>Uploaded on: %s</blockquote></div><hr>' %
+                                    cgi.escape(str(post.created)))
         else:
             self.redirect('/')
 
