@@ -117,6 +117,7 @@ class BlogFront(Handler):
         if valid_username(self.username):
             posts = Post.all().order('-created')
             self.response.out.write('<html><body>')
+            self.response.out.write('<h2>Welcome, %s!</h2>' % cgi.escape(self.username))
             self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a><hr>')
             for post in posts:
                 self.response.out.write('<hr><div><img src="/img?img_id=%s"></img>' %
