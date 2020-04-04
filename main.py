@@ -117,12 +117,14 @@ class BlogFront(Handler):
         if valid_username(self.username):
             posts = Post.all().order('-created')
             self.response.out.write('<html><body>')
-            self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a>')
+            self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a><hr>')
             for post in posts:
-                self.response.out.write('<div><img src="/img?img_id=%s"></img>' %
+                self.response.out.write('<hr><div><img src="/img?img_id=%s"></img>' %
                                     str(post.key()))
-                self.response.out.write('<blockquote>%s</blockquote></div>' %
+                self.response.out.write('<blockquote>Description: %s</blockquote></div>' %
                                     cgi.escape(post.content))
+                self.response.out.write('<blockquote>Uploaded on: %s</blockquote></div><hr>' %
+                                    cgi.escape(str(post.created)))
         else:
             self.redirect('/')
 
@@ -161,7 +163,7 @@ class NewPost(Handler):
         subject = self.request.get('subject')
         content = self.request.get('content')
         image = self.request.get('img')
-        image = images.resize(image, 320, 320)
+        image = image and images.resize(image, 320, 320)
 
         if subject and content and image:
             p = Post(parent = blog_key(), subject = subject, content = content, image = image)
