@@ -120,16 +120,16 @@ class BlogFront(Handler):
             self.response.out.write('<a href="/blog/newpost">post</a> <br> <a href="logout">logout</a>')
             for post in posts:
                 self.response.out.write('<div><img src="/img?img_id=%s"></img>' %
-                                    post.key)
+                                    str(post.key()))
                 self.response.out.write('<blockquote>%s</blockquote></div>' %
                                     cgi.escape(post.content))
         else:
             self.redirect('/')
 
-class Image(Handler):
+class Image(webapp2.RequestHandler):
     def get(self):
         post_key = db.Key(self.request.get('img_id'))
-        post = post_key.get()
+        post = db.get(post_key)
         if post.image:
             self.response.headers['Content-Type'] = 'image/png'
             self.response.out.write(post.image)
